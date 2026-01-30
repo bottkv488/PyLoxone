@@ -586,7 +586,7 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
             SENDDOMAIN,
             dict(
                 uuid=self.uuidAction,
-                value=f'setTarget/{kwargs["targetTemperature"]}',
+                value=f'setTarget/{kwargs["temperature"]}',
             ),
         )
 
