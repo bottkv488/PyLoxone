@@ -228,18 +228,39 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         super().__init__(**kwargs)
         self.hass = kwargs["hass"]
         self._position = None
+        self._position_loxone = None
+        self._target_position = None
         self._closed = True
         self._direction = 0
-
         self.type = "Window"
         self._attr_device_info = get_or_create_device(
             self.unique_id, self.name, self.type, self.room
         )
 
+    # async def event_handler(self, e):
+    #     if self.states["position"] in e.data or self.states["direction"] in e.data:
+    #         if self.states["position"] in e.data:
+    #             self._position = float(e.data[self.states["position"]]) * 100.0
+    #             if self._position == 0:
+    #                 self._closed = True
+    #             else:
+    #                 self._closed = False
+
+    #         if self.states["direction"] in e.data:
+    #             self._direction = e.data[self.states["direction"]]
+
+    #         if self.states.get("targetPosition") in e.data:
+    #             target_position_loxone = float(e.data[self.states["targetPosition"]]) * 100.0
+    #             self._target_position = map_range(target_position_loxone, 0, 100, 100, 0)
+
+    #         self.schedule_update_ha_state()
+
     async def event_handler(self, e):
-        if self.states["position"] in e.data or self.states["direction"] in e.data:
+        if self.states["position"] in e.data or self.states["direction"] in e.data or self.states.get("targetPosition") in e.data:
             if self.states["position"] in e.data:
-                self._position = float(e.data[self.states["position"]]) * 100.0
+                self._position_loxone = float(e.data[self.states["position"]]) * 100.0
+                self._position = map_range(self._position_loxone, 0, 100, 100, 0)
+                
                 if self._position == 0:
                     self._closed = True
                 else:
@@ -248,8 +269,12 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
             if self.states["direction"] in e.data:
                 self._direction = e.data[self.states["direction"]]
 
-            self.schedule_update_ha_state()
+            if self.states.get("targetPosition") in e.data:
+                target_position_loxone = float(e.data[self.states["targetPosition"]]) * 100.0
+                self._target_position = map_range(target_position_loxone, 0, 100, 100, 0)
 
+            self.schedule_update_ha_state()
+    
     @property
     def current_cover_position(self):
         """Return current position of cover.
@@ -257,6 +282,22 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         None is unknown, 0 is closed, 100 is fully open.
         """
         return self._position
+
+
+    # @property
+    # def extra_state_attributes(self):
+    #     """
+    #     Return device specific state attributes.
+    #     Implemented by platform classes.
+    #     """
+    #     device_att = {
+    #         **self._attr_extra_state_attributes,
+    #         "device_type": self.type,
+    #     }
+
+    #     if self._target_position is not None:
+    #         device_att["target_position"] = self.target_position
+    #     return device_att
 
     @property
     def extra_state_attributes(self):
@@ -267,7 +308,13 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         device_att = {
             **self._attr_extra_state_attributes,
             "device_type": self.type,
+            "current_position": self.current_cover_position,
+            "current_position_loxone_style": round(self._position_loxone, 0) if self._position_loxone is not None else None,
         }
+        
+        if self._target_position is not None:
+            device_att["target_position"] = self.target_position
+            
         return device_att
 
     @property
@@ -293,6 +340,11 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
     def is_closed(self):
         return self._closed
 
+    @property
+    def target_position(self):
+        """Return the target position of the cover."""
+        return self._target_position
+
     def open_cover(self, **kwargs: Any) -> None:
         self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="fullopen"))
 
@@ -310,14 +362,21 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
                 SENDDOMAIN, dict(uuid=self.uuidAction, value="fullclose")
             )
 
+    # def set_cover_position(self, **kwargs):
+    #     """Return the current tilt position of the cover."""
+    #     position = kwargs.get(ATTR_POSITION)
+    #     self.hass.bus.fire(
+    #         SENDDOMAIN,
+    #         dict(uuid=self.uuidAction, value="moveToPosition/{}".format(position)),
+    #     )
     def set_cover_position(self, **kwargs):
-        """Return the current tilt position of the cover."""
+        """Move the cover to a specific position."""
         position = kwargs.get(ATTR_POSITION)
+        mapped_pos = map_range(position, 0, 100, 100, 0)
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(uuid=self.uuidAction, value="moveToPosition/{}".format(position)),
+            dict(uuid=self.uuidAction, value="moveToPosition/{}".format(mapped_pos)),
         )
-
 
 class LoxoneJalousie(LoxoneEntity, CoverEntity):
     """Loxone Jalousie"""
