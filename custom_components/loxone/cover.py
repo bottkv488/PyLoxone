@@ -259,7 +259,8 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         if self.states["position"] in e.data or self.states["direction"] in e.data or self.states.get("targetPosition") in e.data:
             if self.states["position"] in e.data:
                 self._position_loxone = float(e.data[self.states["position"]]) * 100.0
-                self._position = map_range(self._position_loxone, 0, 100, 100, 0)
+                # self._position = map_range(self._position_loxone, 0, 100, 100, 0)
+                self._position = self._position_loxone
                 
                 if self._position == 0:
                     self._closed = True
@@ -271,10 +272,12 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
 
             if self.states.get("targetPosition") in e.data:
                 target_position_loxone = float(e.data[self.states["targetPosition"]]) * 100.0
-                self._target_position = map_range(target_position_loxone, 0, 100, 100, 0)
+                # self._target_position = map_range(target_position_loxone, 0, 100, 100, 0)
+                self._target_position = target_position_loxone
 
             self.schedule_update_ha_state()
     
+
     @property
     def current_cover_position(self):
         """Return current position of cover.
@@ -362,21 +365,21 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
                 SENDDOMAIN, dict(uuid=self.uuidAction, value="fullclose")
             )
 
-    # def set_cover_position(self, **kwargs):
-    #     """Return the current tilt position of the cover."""
-    #     position = kwargs.get(ATTR_POSITION)
-    #     self.hass.bus.fire(
-    #         SENDDOMAIN,
-    #         dict(uuid=self.uuidAction, value="moveToPosition/{}".format(position)),
-    #     )
     def set_cover_position(self, **kwargs):
-        """Move the cover to a specific position."""
+        """Return the current tilt position of the cover."""
         position = kwargs.get(ATTR_POSITION)
-        mapped_pos = map_range(position, 0, 100, 100, 0)
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(uuid=self.uuidAction, value="moveToPosition/{}".format(mapped_pos)),
+            dict(uuid=self.uuidAction, value="moveToPosition/{}".format(position)),
         )
+    # def set_cover_position(self, **kwargs):
+    #     """Move the cover to a specific position."""
+    #     position = kwargs.get(ATTR_POSITION)
+    #     mapped_pos = map_range(position, 0, 100, 100, 0)
+    #     self.hass.bus.fire(
+    #         SENDDOMAIN,
+    #         dict(uuid=self.uuidAction, value="moveToPosition/{}".format(mapped_pos)),
+    #     )
 
 class LoxoneJalousie(LoxoneEntity, CoverEntity):
     """Loxone Jalousie"""
