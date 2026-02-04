@@ -237,28 +237,11 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
             self.unique_id, self.name, self.type, self.room
         )
 
-    # async def event_handler(self, e):
-    #     if self.states["position"] in e.data or self.states["direction"] in e.data:
-    #         if self.states["position"] in e.data:
-    #             self._position = float(e.data[self.states["position"]]) * 100.0
-    #             if self._position == 0:
-    #                 self._closed = True
-    #             else:
-    #                 self._closed = False
-
-    #         if self.states["direction"] in e.data:
-    #             self._direction = e.data[self.states["direction"]]
-
-    #         if self.states.get("targetPosition") in e.data:
-    #             target_position_loxone = float(e.data[self.states["targetPosition"]]) * 100.0
-    #             self._target_position = map_range(target_position_loxone, 0, 100, 100, 0)
-
-    #         self.schedule_update_ha_state()
-
     async def event_handler(self, e):
         if self.states["position"] in e.data or self.states["direction"] in e.data or self.states.get("targetPosition") in e.data:
             if self.states["position"] in e.data:
                 self._position_loxone = float(e.data[self.states["position"]]) * 100.0
+                # Loxone Window position is NOT inverted like Jalousie, so no need to map it
                 # self._position = map_range(self._position_loxone, 0, 100, 100, 0)
                 self._position = self._position_loxone
                 
@@ -287,21 +270,6 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         return self._position
 
 
-    # @property
-    # def extra_state_attributes(self):
-    #     """
-    #     Return device specific state attributes.
-    #     Implemented by platform classes.
-    #     """
-    #     device_att = {
-    #         **self._attr_extra_state_attributes,
-    #         "device_type": self.type,
-    #     }
-
-    #     if self._target_position is not None:
-    #         device_att["target_position"] = self.target_position
-    #     return device_att
-
     @property
     def extra_state_attributes(self):
         """
@@ -312,6 +280,7 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
             **self._attr_extra_state_attributes,
             "device_type": self.type,
             "current_position": self.current_cover_position,
+            # FIXME: as there is no difference between current_position and current_position_loxone_style, this is just for debugging purposes and should be removed in the future
             "current_position_loxone_style": round(self._position_loxone, 0) if self._position_loxone is not None else None,
         }
         
@@ -372,14 +341,6 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
             SENDDOMAIN,
             dict(uuid=self.uuidAction, value="moveToPosition/{}".format(position)),
         )
-    # def set_cover_position(self, **kwargs):
-    #     """Move the cover to a specific position."""
-    #     position = kwargs.get(ATTR_POSITION)
-    #     mapped_pos = map_range(position, 0, 100, 100, 0)
-    #     self.hass.bus.fire(
-    #         SENDDOMAIN,
-    #         dict(uuid=self.uuidAction, value="moveToPosition/{}".format(mapped_pos)),
-    #     )
 
 class LoxoneJalousie(LoxoneEntity, CoverEntity):
     """Loxone Jalousie"""
